@@ -45,7 +45,7 @@ body{
   height:64px;background:var(--bg);display:flex;align-items:center;
   justify-content:space-between;padding:0 28px;flex-shrink:0;border-bottom:1px solid var(--border);
 }
-.brand{display:flex;align-items:center;gap:8px}
+.brand{display:flex;align-items:center;gap:8px;background:none;border:none;padding:0;cursor:pointer}
 .brandLogo{height:20px;width:auto;display:block}
 /* The source SVG is a white wordmark (built for a dark shell) — recolor for light mode. */
 [data-theme='light'] .brandLogo{filter:invert(1) brightness(.18)}

@@ -406,6 +406,21 @@ export default function ComparePage() {
     textareaRef.current?.focus();
   }
 
+  function goHome() {
+    // Guarded while a stream is in flight: the in-progress ask() calls hold direct
+    // references to the DOM nodes being cleared here, and letting them keep writing
+    // into detached nodes after a reset would leave the status pills in a stale state.
+    if (busyRef.current) return;
+    bodyCortexRef.current!.innerHTML = "";
+    bodyClaudeRef.current!.innerHTML = "";
+    for (const st of [stCortexRef.current!, stClaudeRef.current!]) {
+      st.textContent = "idle";
+      st.className = "columnStatus";
+    }
+    setQuestion("");
+    setStarted(false);
+  }
+
   function onTextareaInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setQuestion(e.target.value);
     e.target.style.height = "auto";
@@ -448,9 +463,9 @@ export default function ComparePage() {
   return (
     <>
       <header className="header">
-        <div className="brand">
+        <button type="button" className="brand" onClick={goHome} title="Back to home" aria-label="Back to home">
           <img src="/neowealth-logo.svg" alt="NeoWealth" className="brandLogo" />
-        </div>
+        </button>
         <div className="headerRight">
           <button className="themeToggle" onClick={toggleTheme} type="button" title="Toggle theme">
             {theme === "dark" ? (
