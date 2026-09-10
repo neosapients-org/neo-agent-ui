@@ -12,15 +12,13 @@ const RATES: Record<string, { in: number; out: number }> = {
 };
 const FALLBACK = { in: 2.0, out: 10.0 };
 
-// NEXT_PUBLIC_ prefix required — this runs in the browser (fetch calls made client-side),
-// so the value must be inlined into the client bundle at build time, not just available
-// to the Node server. Falls back to localhost defaults if unset.
-const CORTEX_BASE_URL = process.env.NEXT_PUBLIC_AGENT_CORTEX_URL || "http://127.0.0.1:8000";
-const CLAUDE_BASE_URL = process.env.NEXT_PUBLIC_AGENT_CLAUDE_URL || "http://127.0.0.1:8001";
-
+// Same-origin, relative paths — proxied server-side by app/api/[agent]/chat/stream/route.ts.
+// A direct browser fetch to the agents' http:// EC2 URLs gets silently blocked as mixed
+// content once this UI is served over https:// (e.g. on Vercel); routing through this
+// app's own API keeps the browser talking to one HTTPS origin.
 const AGENTS: Record<string, { url: string }> = {
-  cortex: { url: `${CORTEX_BASE_URL}/chat/stream` },
-  claude: { url: `${CLAUDE_BASE_URL}/chat/stream` },
+  cortex: { url: "/api/cortex/chat/stream" },
+  claude: { url: "/api/claude/chat/stream" },
 };
 
 // GUARDRAILS_ENABLED=false, so parallel_prep's step text describes a safety scan that

@@ -28,11 +28,18 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 
-Agent URLs come from `NEXT_PUBLIC_AGENT_CORTEX_URL` / `NEXT_PUBLIC_AGENT_CLAUDE_URL` in
-`.env.local` (see `app/page.tsx`), defaulting to `http://127.0.0.1:8000` / `:8001` if unset.
-The `NEXT_PUBLIC_` prefix is required — these are read client-side (`fetch` runs in the
-browser), so Next.js needs to inline them into the client bundle at build time. Changing
-`.env.local` requires restarting `next dev` — env vars are only read at server startup.
+The browser never calls the agents directly — `app/page.tsx` fetches same-origin
+`/api/cortex/chat/stream` / `/api/claude/chat/stream`, and
+`app/api/[agent]/chat/stream/route.ts` proxies those server-side to the real agent
+URLs. This matters once the UI is deployed over HTTPS (e.g. Vercel): a direct
+browser `fetch()` from an `https://` page to an `http://` agent backend is blocked
+as mixed content, but a server-to-server proxy call has no such restriction.
+
+Agent URLs come from `AGENT_CORTEX_URL` / `AGENT_CLAUDE_URL` (no `NEXT_PUBLIC_`
+prefix — read server-side only, inside the route handler) in `.env.local`,
+defaulting to `http://127.0.0.1:8000` / `:8001` if unset. On Vercel, set these in
+the project's Environment Variables settings instead. Changing `.env.local`
+requires restarting `next dev` — env vars are only read at server startup.
 
 ## Layout
 
@@ -41,6 +48,7 @@ browser), so Next.js needs to inline them into the client bundle at build time. 
 | `app/page.tsx` | the whole UI — two-panel layout, SSE streaming, step trail, metrics chips, theme toggle |
 | `app/globals.css` | styling, incl. `[data-theme='dark']` / `[data-theme='light']` token sets |
 | `app/layout.tsx` | fonts + the inline theme-init script (runs before paint, avoids a flash of the wrong theme) |
+| `app/api/[agent]/chat/stream/route.ts` | server-side SSE proxy to the real agent backend (avoids the browser mixed-content block) |
 
 The streaming/metrics logic in `page.tsx` is deliberately imperative (refs + direct DOM
 writes) rather than idiomatic React state — it mirrors the original vanilla-JS script closely
