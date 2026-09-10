@@ -12,9 +12,15 @@ const RATES: Record<string, { in: number; out: number }> = {
 };
 const FALLBACK = { in: 2.0, out: 10.0 };
 
+// NEXT_PUBLIC_ prefix required — this runs in the browser (fetch calls made client-side),
+// so the value must be inlined into the client bundle at build time, not just available
+// to the Node server. Falls back to localhost defaults if unset.
+const CORTEX_BASE_URL = process.env.NEXT_PUBLIC_AGENT_CORTEX_URL || "http://127.0.0.1:8000";
+const CLAUDE_BASE_URL = process.env.NEXT_PUBLIC_AGENT_CLAUDE_URL || "http://127.0.0.1:8001";
+
 const AGENTS: Record<string, { url: string }> = {
-  cortex: { url: "http://127.0.0.1:8000/chat/stream" },
-  claude: { url: "http://127.0.0.1:8001/chat/stream" },
+  cortex: { url: `${CORTEX_BASE_URL}/chat/stream` },
+  claude: { url: `${CLAUDE_BASE_URL}/chat/stream` },
 };
 
 // GUARDRAILS_ENABLED=false, so parallel_prep's step text describes a safety scan that
