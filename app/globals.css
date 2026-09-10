@@ -1,116 +1,192 @@
+/* Visual language ported from the NeoWealth chat frontend
+   (neosapients-org/neowealth-chatbot, apps/frontend) so this compare tool
+   reads like the same product family. Light is the default theme; dark is
+   opt-in via the header toggle. */
+
+[data-theme='light']{
+  --bg:#f4f5f7; --bg-grid:rgba(0,0,0,.025); --bg-elev:#ffffff; --bg-elev-2:#f1f2f5;
+  --bg-input:#ffffff; --bg-hover:rgba(0,0,0,.045); --bg-userbubble:#e7e9f5;
+  --border:rgba(0,0,0,.09); --border-strong:rgba(0,0,0,.14);
+  --text:#18181b; --text-muted:#52525b; --text-dim:#6b6b76; --text-faint:#9ca3af;
+  --accent:#7c3aed; --accent-2:#6366f1; --accent-soft:rgba(124,58,237,.14);
+  --shadow:0 12px 40px rgba(0,0,0,.18);
+  --ok:#059669; --warn:#b45309; --err:#dc2626;
+  --cortex:#7c3aed; --claude:#c2410c;
+}
 [data-theme='dark']{
-  --bg:#08090d; --bg-elev:#0e0e15; --bg-elev-2:#14151c;
-  --bg-input:#14151c; --bg-hover:rgba(255,255,255,.05); --bg-userbubble:#1c1d27;
+  --bg:#08090d; --bg-grid:rgba(255,255,255,.018); --bg-elev:#0e0e15; --bg-elev-2:#14151c;
+  --bg-input:#14151c; --bg-hover:rgba(255,255,255,.05); --bg-userbubble:#1d1f2b;
   --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
-  --text:#f4f4f5; --text-muted:#a1a1aa; --text-dim:#8b8b9a; --text-faint:#52525b;
+  /* --text-faint was #52525b (~2.4:1 against --bg-elev-2) — nearly unreadable for
+     labels that sit right next to a value (chip "COST", column meta, idle status).
+     Bumped to keep it the most de-emphasized tier while staying legible (~3.6:1). */
+  --text:#f4f4f5; --text-muted:#a1a1aa; --text-dim:#8b8b9a; --text-faint:#6e6e7a;
+  --accent:#8b5cf6; --accent-2:#6366f1; --accent-soft:rgba(139,92,246,.18);
   --shadow:0 12px 40px rgba(0,0,0,.55);
   --ok:#34d399; --warn:#fbbf24; --err:#f87171;
   --cortex:#8b5cf6; --claude:#d97757;
 }
-[data-theme='light']{
-  --bg:#f7f7fb; --bg-elev:#ffffff; --bg-elev-2:#eef0f5;
-  --bg-input:#ffffff; --bg-hover:rgba(0,0,0,.04); --bg-userbubble:#eef0f5;
-  --border:rgba(0,0,0,.09); --border-strong:rgba(0,0,0,.18);
-  --text:#17181c; --text-muted:#52525b; --text-dim:#6b6b78; --text-faint:#8b8b9a;
-  --shadow:0 12px 40px rgba(0,0,0,.10);
-  --ok:#059669; --warn:#b45309; --err:#dc2626;
-  --cortex:#7c3aed; --claude:#c2410c;
-}
+
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
 body{
-  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column;
+  font-family:'Poppins','Outfit','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg); color:var(--text); display:flex; flex-direction:column;
   overflow:hidden; -webkit-font-smoothing:antialiased;
-  transition:background-color .15s ease, color .15s ease;
+  transition:background-color .2s ease, color .2s ease;
 }
-
-header{
-  display:flex;align-items:center;gap:14px;padding:14px 22px;
-  border-bottom:1px solid var(--border);background:var(--bg-elev);flex-shrink:0;
-}
-.brand{display:flex;align-items:center;gap:10px}
-.dot{width:28px;height:28px;border-radius:9px;
-     background:linear-gradient(135deg,var(--cortex),var(--claude));
-     display:grid;place-items:center;font-weight:800;font-size:12px;color:#fff;
-     font-family:'Outfit',sans-serif}
-.brand h1{font-family:'Outfit',sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-.2px}
-.brand span{font-size:11.5px;color:var(--text-faint);margin-left:2px}
-.spacer{flex:1}
-
-.theme-toggle{
-  display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:9px;
-  background:var(--bg-elev-2);border:1px solid var(--border);color:var(--text-muted);
-  font-size:12px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif;
-}
-.theme-toggle:hover{background:var(--bg-hover);color:var(--text)}
-
-#split{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0}
-.panel{display:flex;flex-direction:column;min-width:0;min-height:0}
-.panel + .panel{border-left:1px solid var(--border)}
-.panel[data-v="cortex"]{--accent:var(--cortex)}
-.panel[data-v="claude"]{--accent:var(--claude)}
-
-.phead{
-  display:flex;align-items:center;gap:9px;padding:11px 18px;
-  border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg-elev);
-}
-.pdot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0}
-.phead h2{font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;letter-spacing:-.1px}
-.phead .port{font-size:10.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
-.status{margin-left:auto;font-size:10.5px;color:var(--text-faint)}
-.status.live{color:var(--accent)}
-.status.err{color:var(--err)}
-
-.body{flex:1;overflow-y:auto;padding:20px 18px;min-height:0}
-.body::-webkit-scrollbar{width:8px}
-.body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.09);border-radius:4px}
-
-.msg{margin-bottom:22px}
-.who{font-size:10.5px;font-weight:600;color:var(--text-faint);letter-spacing:.5px;
-     text-transform:uppercase;margin-bottom:7px}
-.bubble{background:var(--bg-userbubble);padding:10px 14px;border-radius:12px;
-        font-size:13.5px;line-height:1.6}
-.answer{font-size:14px;line-height:1.72;white-space:pre-wrap;color:var(--text)}
-.answer.streaming::after{content:'▍';color:var(--accent);animation:blink 1s steps(2) infinite}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes blink{50%{opacity:0}}
-.answer table{border-collapse:collapse;margin:10px 0;font-size:12.5px;width:100%}
-.answer th,.answer td{border:1px solid var(--border);padding:5px 9px;text-align:left}
-.answer th{background:var(--bg-elev-2);font-weight:600}
+@keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
 
-.steps{margin:8px 0 12px;border-left:2px solid var(--border);padding-left:11px}
-.step{font-size:11.5px;color:var(--text-faint);line-height:1.65;display:flex;gap:7px}
-.step .t{color:var(--accent);font-weight:600;flex-shrink:0;min-width:96px}
+/* ── Header ─────────────────────────────────────────────── */
+.header{
+  height:64px;background:var(--bg);display:flex;align-items:center;
+  justify-content:space-between;padding:0 28px;flex-shrink:0;border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:8px}
+.brandLogo{height:20px;width:auto;display:block}
+/* The source SVG is a white wordmark (built for a dark shell) — recolor for light mode. */
+[data-theme='light'] .brandLogo{filter:invert(1) brightness(.18)}
+.headerRight{display:flex;align-items:center;gap:12px}
+.themeToggle{
+  background:none;border:none;color:var(--text-dim);cursor:pointer;width:38px;height:38px;
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  transition:color .2s ease, background .2s ease;
+}
+.themeToggle:hover{color:var(--text);background:var(--bg-hover)}
 
-.rmetrics{
-  display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;
+/* ── Chat board / hero ──────────────────────────────────── */
+.chatBoard{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);
+  background-image:linear-gradient(var(--bg-grid) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--bg-grid) 1px,transparent 1px);
+  background-size:24px 24px;position:relative;min-height:0;
 }
-.chip{
-  display:flex;align-items:baseline;gap:5px;padding:4px 9px;border-radius:7px;
-  background:var(--bg-elev-2);border:1px solid var(--border);
+.heroWrap{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:22px;padding:24px;width:100%;max-width:820px;margin:0 auto;animation:fadeIn .5s ease;
 }
+.heroAvatar{
+  width:150px;height:150px;display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 0 38px rgba(139,92,246,.35));animation:heroFloat 5s ease-in-out infinite;
+}
+.heroImg{width:150px;height:150px;object-fit:contain}
+.heroTitle{
+  font-family:'Poppins',sans-serif;font-size:30px;font-weight:700;line-height:1.25;
+  text-align:center;color:var(--text);letter-spacing:-.5px;max-width:820px;
+}
+.heroInput{width:100%;max-width:760px}
+
+/* ── Side-by-side compare columns ──────────────────────────
+   Each column is one agent's own scrollable transcript, tagged with that
+   agent's accent so two columns can never be confused for one another. */
+.compareColumns{flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0}
+.column{display:flex;flex-direction:column;min-width:0;min-height:0;--col-accent:var(--accent)}
+.column + .column{border-left:1px solid var(--border)}
+.column[data-agent="cortex"]{--col-accent:var(--cortex)}
+.column[data-agent="claude"]{--col-accent:var(--claude)}
+.columnHead{
+  display:flex;align-items:center;gap:9px;padding:12px 20px;border-bottom:1px solid var(--border);
+  flex-shrink:0;background:var(--bg-elev);
+}
+.columnDot{width:9px;height:9px;border-radius:50%;background:var(--col-accent);flex-shrink:0}
+.columnHead h2{font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:600}
+.columnMeta{font-size:10.5px;color:var(--text-faint)}
+.columnStatus{margin-left:auto;font-size:10.5px;color:var(--text-faint)}
+.columnStatus.live{color:var(--col-accent)}
+.columnStatus.err{color:var(--err)}
+
+.chatMessages{
+  flex:1;overflow-y:auto;padding:24px 20px;display:flex;flex-direction:column;gap:20px;
+}
+.chatMessages::-webkit-scrollbar{width:7px}
+.chatMessages::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:4px}
+
+/* ── Messages ───────────────────────────────────────────── */
+.messageRow{display:flex;width:100%;gap:10px}
+.messageRowUser{justify-content:flex-end}
+.messageRowAssistant{justify-content:flex-start}
+.messageBubble{max-width:88%;border-radius:14px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
+.messageBubbleUser{background:var(--bg-userbubble);color:var(--text);padding:10px 15px;border-bottom-right-radius:5px}
+.assistantAvatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.assistantAvatar img{width:100%;height:100%;object-fit:contain}
+.messageBubbleAssistant{flex:1;max-width:calc(100% - 42px);color:var(--text);display:flex;flex-direction:column;gap:10px}
+
+.answer{font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--text)}
+.answer.streaming::after{content:'▍';color:var(--col-accent, var(--accent));animation:blink 1s steps(2) infinite}
+.answer strong{font-weight:650}
+.answer code{background:var(--bg-elev-2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+
+.markdownTableWrap{margin:6px 0;overflow-x:auto;border:1px solid var(--border-strong);border-radius:10px}
+.markdownTable{width:100%;border-collapse:collapse;font-size:12.5px;color:var(--text)}
+.markdownThead{background:var(--accent-soft)}
+.markdownTh{text-align:left;padding:8px 12px;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border-strong)}
+.markdownTd{padding:7px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:top}
+.markdownTr:nth-child(even){background:var(--bg-hover)}
+
+/* ── Thought block (step trail + TTFT), collapsible ────────
+   Enrichment is an LLM call taking a few seconds and its step is only
+   emitted once that call returns — a live "Analysing… N.Ns" counter
+   fills the gap so the panel never looks stalled. */
+.thoughtBlock{background:var(--bg-hover);border:1px solid var(--border);border-radius:10px;overflow:hidden;max-width:100%}
+.thoughtHeader{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:11px;font-weight:500;
+  color:var(--text-dim);cursor:pointer;user-select:none;transition:color .2s ease;
+}
+.thoughtHeader:hover{color:var(--text)}
+.thoughtIndicator{width:6px;height:6px;background:var(--ok);border-radius:50%;flex-shrink:0}
+.thoughtIndicator.pending{animation:pulse 1s ease-in-out infinite}
+.thoughtLabel{flex:1}
+.thoughtArrow{transition:transform .18s ease;color:var(--text-faint)}
+.thoughtArrow.open{transform:rotate(90deg)}
+.thoughtContent{padding:8px 12px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-muted);display:flex;flex-direction:column;gap:6px}
+.thoughtContent.collapsed{display:none}
+.step{font-size:11.5px;color:var(--text-dim);line-height:1.55;display:flex;gap:7px}
+.step .t{color:var(--col-accent,var(--accent));font-weight:600;flex-shrink:0;min-width:96px}
+
+.errorBox{
+  color:var(--err);font-size:13px;border-radius:10px;padding:10px 13px;
+  background:color-mix(in srgb,var(--err) 10%,transparent);
+  border:1px solid color-mix(in srgb,var(--err) 30%,transparent);
+}
+
+/* Per-turn cost/token/latency chips — this app's own addition on top of the
+   NeoWealth visual language, since a single-agent chat has no need to
+   compare cost between two runs of the same question. */
+.rmetrics{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:flex;align-items:baseline;gap:5px;padding:4px 9px;border-radius:7px;background:var(--bg-elev-2);border:1px solid var(--border)}
 .chip .k{font-size:9px;color:var(--text-faint);letter-spacing:.4px;text-transform:uppercase}
-.chip .v{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;
-         font-family:'Outfit',sans-serif;color:var(--text)}
-.chip.cost{border-color:color-mix(in srgb,var(--accent) 40%,transparent);
-           background:color-mix(in srgb,var(--accent) 12%,var(--bg-elev-2))}
-.chip.cost .v{color:var(--accent)}
+.chip .v{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;font-family:'Outfit',sans-serif;color:var(--text)}
+.chip.cost{border-color:color-mix(in srgb,var(--col-accent,var(--accent)) 40%,transparent);background:color-mix(in srgb,var(--col-accent,var(--accent)) 12%,var(--bg-elev-2))}
+.chip.cost .v{color:var(--col-accent,var(--accent))}
+/* .k's --text-faint is tuned for a neutral chip background; against the accent-tinted
+   cost chip it loses almost all contrast (worst in light mode) — use a stronger neutral here. */
+.chip.cost .k{color:var(--text-dim)}
 .rmetrics.pending .chip .v{color:var(--text-faint);font-weight:400}
 
-footer{
-  padding:14px 22px 18px;border-top:1px solid var(--border);
-  background:var(--bg-elev);flex-shrink:0;
+/* ── Composer ───────────────────────────────────────────── */
+.inputAreaContainer{padding:12px 24px 20px;width:100%;max-width:900px;margin:0 auto}
+.inputAreaBox{
+  background:var(--bg-input);border:1px solid color-mix(in srgb,var(--accent) 38%,var(--border));
+  border-radius:22px;padding:12px 16px 12px 20px;display:flex;align-items:center;gap:10px;
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 6%,transparent),0 0 30px color-mix(in srgb,var(--accent) 12%,transparent);
+  transition:border-color .25s ease, box-shadow .25s ease;
 }
-.composer{display:flex;gap:10px;max-width:1100px;margin:0 auto}
-#q{
-  flex:1;background:var(--bg-input);border:1px solid var(--border-strong);
-  border-radius:12px;padding:12px 15px;color:var(--text);font-size:14px;
-  font-family:inherit;resize:none;outline:none;max-height:130px;line-height:1.5;
+.inputAreaBox:focus-within{
+  border-color:color-mix(in srgb,var(--accent) 60%,transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent),0 0 36px color-mix(in srgb,var(--accent) 22%,transparent);
 }
-#q:focus{border-color:rgba(255,255,255,.24)}
-#q::placeholder{color:var(--text-faint)}
-#send{
-  background:linear-gradient(135deg,var(--cortex),var(--claude));border:none;
-  border-radius:12px;padding:0 22px;color:#fff;font-weight:600;font-size:13.5px;
-  cursor:pointer;font-family:'Outfit',sans-serif;
+.textarea{
+  flex:1;background:none;border:none;resize:none;color:var(--text);font-family:inherit;
+  font-size:15.5px;font-weight:400;line-height:1.5;outline:none;max-height:120px;padding:4px 6px;
 }
-#send:disabled{opacity:.45;cursor:not-allowed}
+.textarea::placeholder{color:var(--text-faint)}
+.sendBtn{
+  width:38px;height:38px;min-width:38px;background:none;color:var(--accent);border:none;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:all .2s ease;flex-shrink:0;
+}
+.sendBtn:hover{background:var(--accent-soft)}
+.sendBtn:disabled{color:var(--text-faint);cursor:not-allowed;background:none}
