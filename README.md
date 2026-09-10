@@ -23,12 +23,16 @@ See `../agent-claude/RUNBOOK.md` if either agent isn't set up yet — it covers 
 ## Run
 
 ```bash
+cp .env.example .env.local   # only needed if the agents run somewhere other than localhost
 npm install
 npm run dev   # http://localhost:3000
 ```
 
-Agent URLs are hardcoded in `app/page.tsx` (`AGENTS.cortex.url` / `AGENTS.claude.url`) as
-`http://127.0.0.1:8000` and `:8001` — change those if the agents run elsewhere.
+Agent URLs come from `NEXT_PUBLIC_AGENT_CORTEX_URL` / `NEXT_PUBLIC_AGENT_CLAUDE_URL` in
+`.env.local` (see `app/page.tsx`), defaulting to `http://127.0.0.1:8000` / `:8001` if unset.
+The `NEXT_PUBLIC_` prefix is required — these are read client-side (`fetch` runs in the
+browser), so Next.js needs to inline them into the client bundle at build time. Changing
+`.env.local` requires restarting `next dev` — env vars are only read at server startup.
 
 ## Layout
 
