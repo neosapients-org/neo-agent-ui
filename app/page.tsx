@@ -25,8 +25,15 @@ const AGENTS: Record<string, { url: string }> = {
 // never runs. Memory loading does happen in that node, but it isn't what the line claims.
 const HIDDEN_STEPS = new Set(["parallel_prep"]);
 
+// `cost` is the AGENT's spend alone. `allcost` adds what the Cortex platform burnt
+// resolving the data, and `ptok` is that platform's token count — both stay "—" for
+// agent-claude, which has no platform, and for any turn Cortex served from cache
+// without running a model. Ordered so the two cost chips sit side by side: the pair
+// is the comparison, and a reader should not have to hunt across the row for it.
 const CHIPS: [string, string][] = [
   ["cost", "Cost"],
+  ["allcost", "Agent+Platform"],
+  ["ptok", "Cortex tok"],
   ["tin", "In"],
   ["tout", "Out"],
   ["ttft", "TTFT"],
@@ -103,6 +110,11 @@ type TurnMetrics = {
   ttft: number | null;
   lat: number | null;
   cost: number | null;
+  // Platform-side spend, priced by the gateway rather than here. null means the
+  // platform reported nothing — a cache-served turn, or agent-claude, which has no
+  // platform at all — and is rendered "—". It is NOT the same as 0.
+  pcost: number | null;
+  ptok: number | null;
   t0: number;
   first: boolean;
 };
@@ -159,6 +171,8 @@ export default function ComparePage() {
       ttft: null,
       lat: null,
       cost: null,
+      pcost: null,
+      ptok: null,
       t0: performance.now(),
       first: false,
     };
@@ -222,7 +236,9 @@ export default function ComparePage() {
     metrics.className = "rmetrics pending";
     for (const [k, label] of CHIPS) {
       const chip = document.createElement("span");
-      chip.className = "chip" + (k === "cost" ? " cost" : "");
+      // Both money chips get the accent treatment, so the pair reads as one unit and
+      // the agent-only figure is never mistaken for the turn's full cost.
+      chip.className = "chip" + (k === "cost" || k === "allcost" ? " cost" : "");
       const kEl = document.createElement("span");
       kEl.className = "k";
       kEl.textContent = label;
@@ -352,6 +368,17 @@ export default function ComparePage() {
           setChip(node, "tin", fmtTok(m.tin));
           setChip(node, "tout", fmtTok(m.tout));
           setChip(node, "cost", fmtCost(m.cost));
+          // The platform's own spend, when the gateway reported it. Its cost is used
+          // as given rather than run through priceOf(): only the gateway knows which
+          // models its phases used, and it has already priced each at list rate. The
+          // whole key is absent — never zeroed — when no platform LLM ran, so the
+          // chips are left at "—" rather than being made to claim a free turn.
+          if (d.platform) {
+            m.pcost = d.platform.total_cost_usd ?? 0;
+            m.ptok = d.platform.total_tokens ?? 0;
+            setChip(node, "allcost", fmtCost(m.cost + (m.pcost as number)));
+            setChip(node, "ptok", fmtTok(m.ptok as number));
+          }
           if (d.ttft_ms != null) {
             const ttft: number = d.ttft_ms;
             m.ttft = ttft;
