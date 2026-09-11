@@ -39,7 +39,7 @@ const BASE_CHIPS: [string, string][] = [
 // the row for it.
 const PLATFORM_CHIPS: [string, string][] = [
   ["allcost", "Agent+Platform"],
-  ["ptok", "Cortex tok"],
+  ["ptok", "Platform tok"],
 ];
 
 // Only agent-cortex gets the platform chips. agent-claude reaches the database directly
