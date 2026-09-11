@@ -506,23 +506,21 @@ export default function ComparePage() {
         )}
 
         <div className="compareColumns" style={{ display: started ? "grid" : "none" }}>
-          <section className="column" data-agent="cortex">
-            <div className="columnHead">
-              <span className="columnDot" />
-              <h2>agent-cortex</h2>
-              <span className="columnMeta">via Cortex platform</span>
-              <span className="columnStatus" ref={stCortexRef}>idle</span>
-            </div>
-            <div className="chatMessages" ref={bodyCortexRef} />
-          </section>
           <section className="column" data-agent="claude">
             <div className="columnHead">
               <span className="columnDot" />
-              <h2>agent-claude</h2>
-              <span className="columnMeta">direct SQL</span>
+              <h2>Only Claude</h2>
               <span className="columnStatus" ref={stClaudeRef}>idle</span>
             </div>
             <div className="chatMessages" ref={bodyClaudeRef} />
+          </section>
+          <section className="column" data-agent="cortex">
+            <div className="columnHead">
+              <span className="columnDot" />
+              <h2>Claude + NeoSapients</h2>
+              <span className="columnStatus" ref={stCortexRef}>idle</span>
+            </div>
+            <div className="chatMessages" ref={bodyCortexRef} />
           </section>
         </div>
       </main>
