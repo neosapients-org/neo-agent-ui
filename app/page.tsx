@@ -25,20 +25,32 @@ const AGENTS: Record<string, { url: string }> = {
 // never runs. Memory loading does happen in that node, but it isn't what the line claims.
 const HIDDEN_STEPS = new Set(["parallel_prep"]);
 
-// `cost` is the AGENT's spend alone. `allcost` adds what the Cortex platform burnt
-// resolving the data, and `ptok` is that platform's token count — both stay "—" for
-// agent-claude, which has no platform, and for any turn Cortex served from cache
-// without running a model. Ordered so the two cost chips sit side by side: the pair
-// is the comparison, and a reader should not have to hunt across the row for it.
-const CHIPS: [string, string][] = [
+const BASE_CHIPS: [string, string][] = [
   ["cost", "Cost"],
-  ["allcost", "Agent+Platform"],
-  ["ptok", "Cortex tok"],
   ["tin", "In"],
   ["tout", "Out"],
   ["ttft", "TTFT"],
   ["lat", "Latency"],
 ];
+
+// `allcost` adds what the Cortex platform burnt resolving the data to the agent's own
+// spend, and `ptok` is that platform's token count. Ordered so the two money chips sit
+// side by side: the pair is the comparison, and a reader should not have to hunt across
+// the row for it.
+const PLATFORM_CHIPS: [string, string][] = [
+  ["allcost", "Agent+Platform"],
+  ["ptok", "Cortex tok"],
+];
+
+// Only agent-cortex gets the platform chips. agent-claude reaches the database directly
+// (DATA_RESOLVER=direct, empty MCP_URL) — there is no platform in its path, so for it
+// `Cost` IS the total and a permanently blank "Agent+Platform" would read as a missing
+// measurement rather than as the architectural difference the comparison is about.
+function chipsFor(agent: string): [string, string][] {
+  return agent === "cortex"
+    ? [BASE_CHIPS[0], ...PLATFORM_CHIPS, ...BASE_CHIPS.slice(1)]
+    : BASE_CHIPS;
+}
 
 function priceOf(model: string, tin: number, tout: number) {
   const r = RATES[model] || FALLBACK;
@@ -234,7 +246,7 @@ export default function ComparePage() {
 
     const metrics = document.createElement("div");
     metrics.className = "rmetrics pending";
-    for (const [k, label] of CHIPS) {
+    for (const [k, label] of chipsFor(v)) {
       const chip = document.createElement("span");
       // Both money chips get the accent treatment, so the pair reads as one unit and
       // the agent-only figure is never mistaken for the turn's full cost.
