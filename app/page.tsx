@@ -25,32 +25,20 @@ const AGENTS: Record<string, { url: string }> = {
 // never runs. Memory loading does happen in that node, but it isn't what the line claims.
 const HIDDEN_STEPS = new Set(["parallel_prep"]);
 
-const BASE_CHIPS: [string, string][] = [
+// Identical in both columns, on purpose: the comparison is only readable if the two
+// sides are measured the same way, so there is no cortex-only chip here.
+//
+// `cost`/`tin`/`tout` are the WHOLE turn, both legs of it. For agent-claude that is
+// just the agent, which talks to the database itself. For agent-cortex the platform's
+// own model spend (resolve_context: understand -> discovery -> plan -> synthesis) gets
+// folded into these same three rather than shown separately — see the `usage` handler.
+const CHIPS: [string, string][] = [
   ["cost", "Cost"],
   ["tin", "In"],
   ["tout", "Out"],
   ["ttft", "TTFT"],
   ["lat", "Latency"],
 ];
-
-// `allcost` adds what the Cortex platform burnt resolving the data to the agent's own
-// spend, and `ptok` is that platform's token count. Ordered so the two money chips sit
-// side by side: the pair is the comparison, and a reader should not have to hunt across
-// the row for it.
-const PLATFORM_CHIPS: [string, string][] = [
-  ["allcost", "Agent+Platform"],
-  ["ptok", "Platform tok"],
-];
-
-// Only agent-cortex gets the platform chips. agent-claude reaches the database directly
-// (DATA_RESOLVER=direct, empty MCP_URL) — there is no platform in its path, so for it
-// `Cost` IS the total and a permanently blank "Agent+Platform" would read as a missing
-// measurement rather than as the architectural difference the comparison is about.
-function chipsFor(agent: string): [string, string][] {
-  return agent === "cortex"
-    ? [BASE_CHIPS[0], ...PLATFORM_CHIPS, ...BASE_CHIPS.slice(1)]
-    : BASE_CHIPS;
-}
 
 function priceOf(model: string, tin: number, tout: number) {
   const r = RATES[model] || FALLBACK;
@@ -122,9 +110,10 @@ type TurnMetrics = {
   ttft: number | null;
   lat: number | null;
   cost: number | null;
-  // Platform-side spend, priced by the gateway rather than here. null means the
-  // platform reported nothing — a cache-served turn, or agent-claude, which has no
-  // platform at all — and is rendered "—". It is NOT the same as 0.
+  // The platform's share of the figures above, kept separately so the split is still
+  // recoverable after it has been folded into cost/tin/tout. null means the platform
+  // reported nothing — a cache-served turn, or agent-claude, which has no platform at
+  // all — which is NOT the same as it reporting zero.
   pcost: number | null;
   ptok: number | null;
   t0: number;
@@ -246,11 +235,9 @@ export default function ComparePage() {
 
     const metrics = document.createElement("div");
     metrics.className = "rmetrics pending";
-    for (const [k, label] of chipsFor(v)) {
+    for (const [k, label] of CHIPS) {
       const chip = document.createElement("span");
-      // Both money chips get the accent treatment, so the pair reads as one unit and
-      // the agent-only figure is never mistaken for the turn's full cost.
-      chip.className = "chip" + (k === "cost" || k === "allcost" ? " cost" : "");
+      chip.className = "chip" + (k === "cost" ? " cost" : "");
       const kEl = document.createElement("span");
       kEl.className = "k";
       kEl.textContent = label;
@@ -376,21 +363,32 @@ export default function ComparePage() {
           m.tin = d.input_tokens || 0;
           m.tout = d.output_tokens || 0;
           m.cost = priceOf(d.model, m.tin, m.tout);
+          // Fold the platform's leg into the SAME three chips rather than adding its
+          // own. A turn is one unit of work whoever ran the models, and a separate
+          // "Agent+Platform" chip made the two columns unlike each other — agent-claude
+          // has no platform, so its chip could only ever be blank, which reads as a
+          // failed measurement instead of an architectural difference.
+          //
+          // Its cost is added as reported, not re-run through priceOf(): only the
+          // gateway knows which model served each of its phases, and it has already
+          // priced them. The key is absent — never zeroed — when no platform model ran
+          // (cache hit, or a gateway predating neo-platform#1164), so those turns are
+          // simply the agent's own numbers, unchanged.
+          if (d.platform) {
+            const p = d.platform;
+            const pcost: number = p.total_cost_usd ?? 0;
+            m.pcost = pcost;
+            m.ptok = p.total_tokens ?? 0;
+            // Cached input is still input the platform was billed for, so it belongs
+            // in `In` alongside prompt_tokens.
+            m.tin += (p.prompt_tokens ?? 0) + (p.cached_input_tokens ?? 0);
+            m.tout += p.completion_tokens ?? 0;
+            m.cost += pcost;
+          }
           node.metrics.classList.remove("pending");
           setChip(node, "tin", fmtTok(m.tin));
           setChip(node, "tout", fmtTok(m.tout));
           setChip(node, "cost", fmtCost(m.cost));
-          // The platform's own spend, when the gateway reported it. Its cost is used
-          // as given rather than run through priceOf(): only the gateway knows which
-          // models its phases used, and it has already priced each at list rate. The
-          // whole key is absent — never zeroed — when no platform LLM ran, so the
-          // chips are left at "—" rather than being made to claim a free turn.
-          if (d.platform) {
-            m.pcost = d.platform.total_cost_usd ?? 0;
-            m.ptok = d.platform.total_tokens ?? 0;
-            setChip(node, "allcost", fmtCost(m.cost + (m.pcost as number)));
-            setChip(node, "ptok", fmtTok(m.ptok as number));
-          }
           if (d.ttft_ms != null) {
             const ttft: number = d.ttft_ms;
             m.ttft = ttft;
