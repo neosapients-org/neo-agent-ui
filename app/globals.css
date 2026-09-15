@@ -164,10 +164,10 @@ body{
    cost chip it loses almost all contrast (worst in light mode) — use a stronger neutral here. */
 .chip.cost .k{color:var(--text-dim)}
 .rmetrics.pending .chip .v{color:var(--text-faint);font-weight:400}
-/* Agent/platform split on hover. Only the chips that actually carry a platform leg get
-   `data-tip` (see the `usage` handler), so the cursor change is itself the signal that
-   there is something behind the number — and the chips without one stay inert rather
-   than opening an empty tooltip. */
+/* Agent/platform split on hover. Set on the Cortex column's cost/token chips only (see
+   the `usage` handler) — agent-claude has no platform leg to split, so its chips stay
+   inert. A cortex turn the platform served from cache says "not reported" rather than
+   showing nothing, since a hover that does nothing reads as a broken tooltip. */
 .chip[data-tip]{position:relative;cursor:help}
 .chip[data-tip]::after{
   content:attr(data-tip);

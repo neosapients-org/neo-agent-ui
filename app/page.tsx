@@ -293,7 +293,7 @@ export default function ComparePage() {
     if (el) el.textContent = text;
   }
 
-  // Hover breakdown for a chip whose value is the sum of both legs. The line break is a
+  // Hover breakdown for a chip whose value may be the sum of both legs. The line break is a
   // REAL newline, rendered by `white-space: pre` on the tooltip: CSS escapes like \A are
   // not interpreted inside a content: attr() value, they come out literally. Set on the
   // chip rather than the value span so the whole target is hoverable.
@@ -401,6 +401,15 @@ export default function ComparePage() {
             setChipTip(node, "cost", fmtCost(aCost), fmtCost(pcost));
             setChipTip(node, "tin", fmtTok(aIn), fmtTok(pin));
             setChipTip(node, "tout", fmtTok(aOut), fmtTok(pout));
+          } else if (v === "cortex") {
+            // A cortex turn with no platform section still gets a tooltip, saying so.
+            // Attaching nothing here was worse: a hover that does nothing is
+            // indistinguishable from a broken tooltip, and this is a turn the platform
+            // served from its response/plan cache without running a model — which is
+            // worth knowing, because it is also why `Cost` looks unusually low.
+            setChipTip(node, "cost", fmtCost(m.cost), "not reported");
+            setChipTip(node, "tin", fmtTok(m.tin), "not reported");
+            setChipTip(node, "tout", fmtTok(m.tout), "not reported");
           }
           node.metrics.classList.remove("pending");
           setChip(node, "tin", fmtTok(m.tin));
