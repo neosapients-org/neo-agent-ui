@@ -293,6 +293,15 @@ export default function ComparePage() {
     if (el) el.textContent = text;
   }
 
+  // Hover breakdown for a chip whose value is the sum of both legs. The line break is a
+  // REAL newline, rendered by `white-space: pre` on the tooltip: CSS escapes like \A are
+  // not interpreted inside a content: attr() value, they come out literally. Set on the
+  // chip rather than the value span so the whole target is hoverable.
+  function setChipTip(node: AnswerNode, k: string, agent: string, platform: string) {
+    const chip = node.metrics.querySelector<HTMLElement>(`[data-k="${k}"]`)?.parentElement;
+    if (chip) chip.dataset.tip = `Agent  ${agent}\nPlatform  ${platform}`;
+  }
+
   async function ask(v: string, question: string, session: string) {
     const st = statuses()[v];
     st.textContent = "running";
@@ -381,9 +390,17 @@ export default function ComparePage() {
             m.ptok = p.total_tokens ?? 0;
             // Cached input is still input the platform was billed for, so it belongs
             // in `In` alongside prompt_tokens.
-            m.tin += (p.prompt_tokens ?? 0) + (p.cached_input_tokens ?? 0);
-            m.tout += p.completion_tokens ?? 0;
+            const pin = (p.prompt_tokens ?? 0) + (p.cached_input_tokens ?? 0);
+            const pout = p.completion_tokens ?? 0;
+            // Captured before folding: once added in, the agent's own share is no
+            // longer recoverable from the displayed total.
+            const aCost = m.cost, aIn = m.tin, aOut = m.tout;
+            m.tin += pin;
+            m.tout += pout;
             m.cost += pcost;
+            setChipTip(node, "cost", fmtCost(aCost), fmtCost(pcost));
+            setChipTip(node, "tin", fmtTok(aIn), fmtTok(pin));
+            setChipTip(node, "tout", fmtTok(aOut), fmtTok(pout));
           }
           node.metrics.classList.remove("pending");
           setChip(node, "tin", fmtTok(m.tin));

@@ -164,6 +164,24 @@ body{
    cost chip it loses almost all contrast (worst in light mode) — use a stronger neutral here. */
 .chip.cost .k{color:var(--text-dim)}
 .rmetrics.pending .chip .v{color:var(--text-faint);font-weight:400}
+/* Agent/platform split on hover. Only the chips that actually carry a platform leg get
+   `data-tip` (see the `usage` handler), so the cursor change is itself the signal that
+   there is something behind the number — and the chips without one stay inert rather
+   than opening an empty tooltip. */
+.chip[data-tip]{position:relative;cursor:help}
+.chip[data-tip]::after{
+  content:attr(data-tip);
+  position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+  white-space:pre;                      /* the attribute carries a real newline */
+  font-size:11px;line-height:1.5;font-family:'Outfit',sans-serif;
+  font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0;
+  color:var(--text);background:var(--bg-elev-1,var(--bg-elev-2));
+  border:1px solid var(--border-strong);border-radius:7px;
+  padding:6px 9px;box-shadow:0 6px 18px rgba(0,0,0,.16);
+  opacity:0;visibility:hidden;transition:opacity .12s ease;
+  pointer-events:none;z-index:20;
+}
+.chip[data-tip]:hover::after{opacity:1;visibility:visible}
 
 /* ── Composer ───────────────────────────────────────────── */
 .inputAreaContainer{padding:12px 24px 20px;width:100%;max-width:900px;margin:0 auto}
